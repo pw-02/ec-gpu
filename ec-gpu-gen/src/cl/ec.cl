@@ -13,6 +13,61 @@ typedef struct {
   FIELD z;
 } POINT_projective;
 
+
+// http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-dbl-2009-l
+DEVICE POINT_projective POINT_double(POINT_projective inp) {
+  //const FIELD local_zero = FIELD_ZERO;
+  //if(FIELD_eq(inp.z, local_zero)) {
+  //   return inp;
+  //}
+
+  const FIELD local_zero = FIELD_ZERO;
+  const FIELD local_one = FIELD_ONE;
+  const FIELD local_two = FIELD_add(local_one,local_one);
+  const FIELD local_three = FIELD_add(local_two,local_one);
+  const FIELD local_six = FIELD_add(local_three,local_three);
+  const FIELD local_nine = FIELD_add(local_six,local_three);
+
+
+  FIELD t0 = FIELD_sqr(inp.y); // let t0 = self.y.square();
+  FIELD z3 =FIELD_add(t0, t0); // let z3 = t0 + t0;
+   z3 = FIELD_add(z3, z3); //let z3 = z3 + z3;
+   z3 = FIELD_add(z3, z3); //let z3 = z3 + z3;
+  FIELD t1 = FIELD_mul(inp.y,inp.z);  //let t1 = self.y * self.z;
+  FIELD t2 = FIELD_sqr(inp.z); //let t2 = self.z.square();
+  t2 = FIELD_mul(t2, local_nine);  //let t2 = $name::mul_by_3b(&t2);
+
+  //t2 = FIELD_mul(t2, t2);  //let t2 = $name::mul_by_3b(&t2);
+
+  FIELD x3 = FIELD_mul(t2,z3); //let x3 = t2 * z3;
+  FIELD y3 = FIELD_add(t0,t2); // let y3 = t0 + t2;
+   z3 = FIELD_mul(t1,z3); // let z3 = t1 * z3;
+   t1 = FIELD_add(t2,t2); // let t1 = t2 + t2;
+   t2 = FIELD_add(t1,t2); // let t2 = t1 + t2;
+   t0 = FIELD_sub(t0,t2); //  let t0 = t0 - t2;
+   y3 = FIELD_mul(t0,y3); // let y3 = t0 * y3;
+   y3  = FIELD_add(x3,y3); //  let y3 = x3 + y3;
+   t1 =  FIELD_mul(inp.x,inp.y); //let t2 = self.z.square();
+   x3 = FIELD_mul(t0,t1); // let x3 = t0 * t1;
+   x3 = FIELD_add(x3,x3);
+
+  POINT_projective tmp;
+  tmp.x = x3;
+  tmp.y = y3;
+  tmp.z = z3;
+  return tmp;
+
+  if(FIELD_eq(inp.z, local_zero)) {
+      return inp;
+  }else
+  {
+  return tmp;
+  }
+ 
+}
+
+
+/*
 // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-dbl-2009-l
 DEVICE POINT_projective POINT_double(POINT_projective inp) {
   const FIELD local_zero = FIELD_ZERO;
@@ -40,7 +95,69 @@ DEVICE POINT_projective POINT_double(POINT_projective inp) {
 
   return inp;
 }
+*/
 
+
+DEVICE POINT_projective POINT_add_mixed(POINT_projective a, POINT_affine b) {
+  
+  const FIELD local_zero = FIELD_ZERO;
+  const FIELD local_one = FIELD_ONE;
+  const FIELD local_two = FIELD_add(local_one,local_one);
+  const FIELD local_three = FIELD_add(local_two,local_one);
+  const FIELD local_six = FIELD_add(local_three,local_three);
+  const FIELD local_nine = FIELD_add(local_six,local_three);
+
+  FIELD t0 = FIELD_mul(a.x,b.x);  //let t0 = self.x * rhs.x;
+  FIELD t1 = FIELD_mul(a.y,b.y); // let t1 = self.y * rhs.y;
+  FIELD t3 = FIELD_add(b.x,b.y); // let t3 = rhs.x + rhs.y;
+  FIELD t4 = FIELD_add(a.x,a.y); // let t4 = self.x + self.y;
+  t3 = FIELD_mul(t3,t4); // let t3 = t3 * t4;
+  t4 = FIELD_add(t0,t1); // let t4 = t0 + t1;
+  t3 = FIELD_sub(t3,t4); // let t3 = t3 - t4;
+  t4 = FIELD_mul(b.y,a.z); // let t4 = rhs.y * self.z;
+  t4 = FIELD_add(t4,a.y); // let t4 = t4 + self.y;
+  FIELD y3 = FIELD_mul(b.x,a.z); // let y3 = rhs.x * self.z;
+  y3 = FIELD_add(y3,a.x); // let y3 = y3 + self.x;
+  FIELD x3 = FIELD_add(t0,t0); // let x3 = t0 + t0;
+  t0 = FIELD_add(x3,t0); // let t0 = x3 + t0;
+  FIELD t2 = FIELD_mul(a.z, local_nine); // let t2 = $name::mul_by_3b(&self.z);
+  FIELD z3 = FIELD_add(t1,t2); // let z3 = t1 + t2;
+  t1 = FIELD_sub(t1,t2); // let t1 = t1 - t2;
+  y3 = FIELD_mul(y3,local_nine); // let y3 = $name::mul_by_3b(&y3);
+  x3 = FIELD_mul(t4,y3); // let x3 = t4 * y3;
+  t2 = FIELD_mul(t3,t1); // let t2 = t3 * t1;
+  x3 = FIELD_sub(t2,x3); // let x3 = t2 - x3;
+  y3 = FIELD_mul(y3,t0); // let y3 = y3 * t0;
+  t1 = FIELD_mul(t1,z3); // let t1 = t1 * z3;
+  y3 = FIELD_add(t1,y3); // let y3 = t1 + y3;
+  t0 = FIELD_mul(t0,t3); // let t0 = t0 * t3;
+  z3 = FIELD_mul(z3,t4); // let z3 = z3 * t4;
+  z3 = FIELD_add(z3,t0); // let z3 = z3 + t0;
+
+   POINT_projective tmp;
+   tmp.x = x3;
+   tmp.y = y3;
+   tmp.z = z3;
+  
+  //$name::conditional_select(&tmp, self, rhs.is_identity())
+
+    if(FIELD_eq(b.x, local_zero)) 
+    {
+      if(FIELD_eq(b.y, local_zero))
+      {
+        return a;
+      }
+      else
+      {
+        return tmp;
+      }
+    } else
+    {
+       return tmp;
+    }
+}
+
+/*
 // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-madd-2007-bl
 DEVICE POINT_projective POINT_add_mixed(POINT_projective a, POINT_affine b) {
   const FIELD local_zero = FIELD_ZERO;
@@ -80,7 +197,61 @@ DEVICE POINT_projective POINT_add_mixed(POINT_projective a, POINT_affine b) {
   ret.z = FIELD_add(a.z, h); ret.z = FIELD_sub(FIELD_sub(FIELD_sqr(ret.z), z1z1), hh);
   return ret;
 }
+*/
 
+// http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-add-2007-bl
+DEVICE POINT_projective POINT_add(POINT_projective a, POINT_projective b) {
+
+  const FIELD local_zero = FIELD_ZERO;
+  const FIELD local_one = FIELD_ONE;
+  const FIELD local_two = FIELD_add(local_one,local_one);
+  const FIELD local_three = FIELD_add(local_two,local_one);
+  const FIELD local_six = FIELD_add(local_three,local_three);
+  const FIELD local_nine = FIELD_add(local_six,local_three);
+
+  FIELD t0 = FIELD_mul(a.x, b.x);//let t0 = self.x * rhs.x;
+  FIELD t1 = FIELD_mul(a.y, b.y);	//let t1 = self.y * rhs.y;
+  FIELD t2 = FIELD_mul(a.z, b.z);	//let t2 = self.z * rhs.z;
+  FIELD t3 = FIELD_add(a.x, a.y); //let t3 = self.x + self.y;
+  FIELD t4 = FIELD_add(b.x,b.y); //let t4 = rhs.x + rhs.y;
+   t3 = FIELD_mul(t3,t4);//let t3 = t3 * t4;
+   t4 = FIELD_add(t0,t1);//let t4 = t0 + t1;
+   t3 = FIELD_sub(t3,t4);//let t3 = t3 - t4;
+   t4 = FIELD_add(a.y,a.z);//let t4 = self.y + self.z;
+  FIELD x3 = FIELD_add(b.y,b.z);//let x3 = rhs.y + rhs.z;
+   t4 = FIELD_mul(t4,x3);//let t4 = t4 * x3;
+   x3 = FIELD_add(t1,t2);//let x3 = t1 + t2;
+   t4 = FIELD_sub(t4,x3);//let t4 = t4 - x3;
+   x3 = FIELD_add(a.x,a.z);//let x3 = self.x + self.z;
+  FIELD y3 = FIELD_add(b.x,b.z);//let y3 = rhs.x + rhs.z;
+   x3 = FIELD_mul(x3,y3);//let x3 = x3 * y3;
+   y3 = FIELD_add(t0,t2);//let y3 = t0 + t2;
+   y3 = FIELD_sub(x3,y3);//let y3 = x3 - y3;
+   x3 = FIELD_add(t0,t0);//let x3 = t0 + t0;
+   t0 = FIELD_add(x3,t0);//let t0 = x3 + t0;
+   t2 = FIELD_mul(t2, local_nine); // let t2 = $name::mul_by_3b(&t2);
+   FIELD z3 = FIELD_add(t1,t2);//let z3 = t1 + t2;
+   t1 = FIELD_sub(t1,t2);//let t1 = t1 - t2;
+   y3 = FIELD_mul(y3, local_nine); // let y3 = $name::mul_by_3b(&y3);
+   x3 = FIELD_mul(t4,y3);//let x3 = t4 * y3;
+   t2 = FIELD_mul(t3,t1);//let t2 = t3 * t1;
+   x3  = FIELD_sub(t2,x3);//let x3 = t2 - x3;
+   y3 = FIELD_mul(y3,t0);//let y3 = y3 * t0;
+   t1 = FIELD_mul(t1,z3);//let t1 = t1 * z3;
+   y3  = FIELD_add(t1,y3);//let y3 = t1 + y3;
+   t0 = FIELD_mul(t0,t3);//let t0 = t0 * t3;
+   z3 = FIELD_mul(z3,t4);//let z3 = z3 * t4;
+   z3= FIELD_add(z3,t0);//let z3 = z3 + t0;
+
+   POINT_projective tmp;
+   tmp.x = x3;
+   tmp.y = y3;
+   tmp.z = z3;
+   return tmp;
+  
+}
+
+/*
 // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-add-2007-bl
 DEVICE POINT_projective POINT_add(POINT_projective a, POINT_projective b) {
 
@@ -117,4 +288,6 @@ DEVICE POINT_projective POINT_add(POINT_projective a, POINT_projective b) {
 
     return a;
   }
-}
+  
+} */
+

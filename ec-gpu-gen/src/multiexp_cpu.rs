@@ -6,9 +6,10 @@ use std::ops::AddAssign;
 use std::sync::Arc;
 
 use bitvec::prelude::{BitVec, Lsb0};
-use ff::{Field, PrimeField};
-use group::{prime::PrimeCurveAffine, Group};
-use pairing::Engine;
+use halo2curves::ff::{Field, PrimeField};
+use halo2curves::pairing::group::{prime::PrimeCurveAffine, Group};
+use halo2curves::pairing::Engine as Engine;
+//use pairing::Engine;
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 use crate::error::EcError;
@@ -90,8 +91,8 @@ pub trait QueryDensity: Sized {
     fn get_query_size(self) -> Option<usize>;
     fn generate_exps<E: Engine>(
         self,
-        exponents: Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>,
-    ) -> Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>;
+        exponents: Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>>,
+    ) -> Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>>;
 }
 
 #[derive(Clone)]
@@ -116,8 +117,8 @@ impl<'a> QueryDensity for &'a FullDensity {
 
     fn generate_exps<E: Engine>(
         self,
-        exponents: Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>,
-    ) -> Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>> {
+        exponents: Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>>,
+    ) -> Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>> {
         exponents
     }
 }
@@ -141,8 +142,8 @@ impl<'a> QueryDensity for &'a DensityTracker {
 
     fn generate_exps<E: Engine>(
         self,
-        exponents: Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>,
-    ) -> Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>> {
+        exponents: Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>>,
+    ) -> Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>> {
         let exps: Vec<_> = exponents
             .iter()
             .zip(self.bv.iter())
@@ -275,9 +276,10 @@ where
         // Create space for the buckets
         let mut buckets = vec![<G as PrimeCurveAffine>::Curve::identity(); (1 << c) - 1];
 
-        let zero = G::Scalar::zero().to_repr();
-        let one = G::Scalar::one().to_repr();
-
+        //let zero = G::Scalar::zero().to_repr();
+        //let one = G::Scalar::one().to_repr();
+        let zero = G::Scalar::ZERO.to_repr();
+        let one = G::Scalar::ONE.to_repr();
         // only the first round uses this
         let handle_trivial = skip == 0;
 
@@ -350,7 +352,7 @@ where
     for<'a> &'a Q: QueryDensity,
     D: Send + Sync + 'static + Clone + AsRef<Q>,
     G: PrimeCurveAffine,
-    E: Engine<Fr = G::Scalar>,
+    E: Engine<Scalar = G::Scalar>,
     S: SourceBuilder<G>,
 {
     let c = if exponents.len() < 32 {
@@ -371,15 +373,16 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use blstrs::Bls12;
-    use group::Curve;
+    use halo2curves::bn256::Bn256;
+    
+    //use blstrs::Bls12;
+    use halo2curves::group::Curve;
     use rand::Rng;
     use rand_core::SeedableRng;
     use rand_xorshift::XorShiftRng;
 
     #[test]
-    fn test_with_bls12() {
+    fn test_with_bn256() {
         fn naive_multiexp<G: PrimeCurveAffine>(
             bases: Arc<Vec<G>>,
             exponents: &[G::Scalar],
@@ -397,13 +400,13 @@ mod tests {
 
         const SAMPLES: usize = 1 << 14;
 
-        let rng = &mut rand::thread_rng();
-        let v: Vec<<Bls12 as Engine>::Fr> = (0..SAMPLES)
-            .map(|_| <Bls12 as Engine>::Fr::random(&mut *rng))
+        let rng: &mut rand::rngs::ThreadRng = &mut rand::thread_rng();
+        let v: Vec<<Bn256 as Engine>::Scalar> = (0..SAMPLES)
+            .map(|_| <Bn256 as Engine>::Scalar::random(&mut *rng))
             .collect();
         let g = Arc::new(
             (0..SAMPLES)
-                .map(|_| <Bls12 as Engine>::G1::random(&mut *rng).to_affine())
+                .map(|_| <Bn256 as Engine>::G1::random(&mut *rng).to_affine())
                 .collect::<Vec<_>>(),
         );
 
@@ -415,7 +418,7 @@ mod tests {
         let pool = Worker::new();
 
         let v = Arc::new(v.into_iter().map(|fr| fr.to_repr()).collect());
-        let fast = multiexp_cpu::<_, _, _, Bls12, _>(&pool, (g, 0), FullDensity, v)
+        let fast = multiexp_cpu::<_, _, _, Bn256, _>(&pool, (g, 0), FullDensity, v)
             .wait()
             .unwrap();
 

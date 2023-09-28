@@ -2,7 +2,7 @@ use std::env;
 
 use ec_gpu::GpuEngine;
 use log::info;
-use pairing::Engine;
+use halo2curves::pairing::Engine;
 #[cfg(feature = "cuda")]
 use rust_gpu_tools::cuda;
 #[cfg(feature = "opencl")]

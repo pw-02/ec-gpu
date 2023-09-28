@@ -23,8 +23,12 @@ rust-gpu-tools = { version = "0.6.0", default-features = false, optional = true 
 temp-env = "0.2.0"
 thiserror = "1.0.30"
 yastl = "0.1.2"
+halo2curves = {path = "../../halo2curves"}
+rand_pcg = "0.3.1"
+
 
 [dev-dependencies]
+halo2curves = {path = "../../halo2curves"}
 blstrs = { version = "0.5.0", features = ["gpu"] }
 rand = "0.8"
 lazy_static = "1.2"
@@ -40,7 +44,7 @@ hex = "0.4"
 sha2 = "0.10"
 
 [features]
-default = ["cuda", "fft", "multiexp", "opencl"]
+default = ["multiexp", "opencl"]
 cuda = ["rust-gpu-tools/cuda"]
 opencl = ["rust-gpu-tools/opencl"]
 fft = []
