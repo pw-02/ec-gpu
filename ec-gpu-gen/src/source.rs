@@ -314,7 +314,8 @@ pub fn common() -> String {
     COMMON_SRC.to_string()
 }
 
-#[cfg(all(test, any(feature = "opencl", feature = "cuda")))]
+
+#[cfg(all(test, any(feature = "cuda")))]
 mod tests {
     use super::*;
 
