@@ -19,7 +19,7 @@
 //! [feature flags]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-features-section
 mod error;
 #[cfg(any(feature = "cuda", feature = "opencl"))]
-mod program;
+//mod program;
 mod source;
 
 /// Fast Fourier Transform on the GPU.
@@ -41,6 +41,10 @@ pub mod threadpool;
 /// Re-export rust-gpu-tools as things like [`rust_gpu_tools::Device`] might be needed.
 #[cfg(any(feature = "cuda", feature = "opencl"))]
 pub use rust_gpu_tools;
+
+/// Re-export rust-gpu-tools as things like [`rust_gpu_tools::Device`] might be needed.
+#[cfg(any(feature = "cuda", feature = "opencl"))]
+pub mod program;
 
 pub use error::{EcError, EcResult};
 pub use source::{common, field, gen_ec_source, gen_source, Limb, Limb32, Limb64};

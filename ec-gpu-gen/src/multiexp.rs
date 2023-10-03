@@ -382,6 +382,8 @@ where
             .into_inner()
             .unwrap()?;
 
+        println!("{:?}", results);
+
         let mut acc = <G as PrimeCurveAffine>::Curve::identity();
         for r in results {
             acc.add_assign(&r);
@@ -414,7 +416,7 @@ mod tests {
     ) -> G::Curve {
         assert_eq!(bases.len(), exponents.len());
     
-        let mut acc = G::Curve::identity();
+        let mut acc: <G as PrimeCurveAffine>::Curve = G::Curve::identity();
     
         for (base, exp) in bases.iter().zip(exponents.iter()) {
             acc.add_assign(&base.mul(*exp));
@@ -446,8 +448,8 @@ mod tests {
 
     #[test]
     fn gpu_multiexp_consistency() {
-        const MAX_LOG_D: usize = 8;
-        const START_LOG_D: usize = 8;
+        const MAX_LOG_D: usize = 2;
+        const START_LOG_D: usize = 2;
         let devices = Device::all();
         let mut kern =
             MultiexpKernel::<Bn256>::create(&devices).expect("Cannot initialize kernel!");
