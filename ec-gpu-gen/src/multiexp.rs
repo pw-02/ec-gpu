@@ -4,9 +4,10 @@ use std::sync::{Arc, RwLock};
 
 use ec_gpu::GpuEngine;
 use halo2curves::ff::PrimeField;
-use halo2curves::pairing::group::{prime::PrimeCurveAffine, Group};
+use halo2curves::pairing::group::{prime, Group};
 use log::{error, info, warn};
 //use pairing::Engine;
+use halo2curves::{CurveAffine};
 
 use halo2curves::pairing::Engine;
 
@@ -147,9 +148,9 @@ where
         bases: &[G],
         exps: &[<G::Scalar as PrimeField>::Repr],
         n: usize,
-    ) -> EcResult<<G as PrimeCurveAffine>::Curve>
+    ) -> EcResult<G::Curve>
     where
-        G: PrimeCurveAffine,
+        G: CurveAffine,
     {
         if let Some(maybe_abort) = &self.maybe_abort {
             if maybe_abort() {
@@ -168,19 +169,19 @@ where
         // Each thread will use `num_groups` * `num_windows` * `bucket_len` buckets.
 
         let closures = program_closures!(
-            |program, _arg| -> EcResult<Vec<<G as PrimeCurveAffine>::Curve>> {
+            |program, _arg| -> EcResult<Vec<G::Curve>> {
                 let base_buffer = program.create_buffer_from_slice(bases)?;
                 let exp_buffer = program.create_buffer_from_slice(exps)?;
 
                 // It is safe as the GPU will initialize that buffer
                 let bucket_buffer = unsafe {
-                    program.create_buffer::<<G as PrimeCurveAffine>::Curve>(
+                    program.create_buffer::<G::Curve>(
                         2 * self.core_count * bucket_len,
                     )?
                 };
                 // It is safe as the GPU will initialize that buffer
                 let result_buffer = unsafe {
-                    program.create_buffer::<<G as PrimeCurveAffine>::Curve>(2 * self.core_count)?
+                    program.create_buffer::<G::Curve>(2 * self.core_count)?
                 };
 
                 // The global work size follows CUDA's definition and is the number of
@@ -212,7 +213,7 @@ where
                     .run()?;
 
                 let mut results =
-                    vec![<G as PrimeCurveAffine>::Curve::identity(); 2 * self.core_count];
+                    vec![G::Curve::identity(); 2 * self.core_count];
                 program.read_into_buffer(&result_buffer, &mut results)?;
 
                 Ok(results)
@@ -223,7 +224,7 @@ where
 
         // Using the algorithm below, we can calculate the final result by accumulating the results
         // of those `NUM_GROUPS` * `NUM_WINDOWS` threads.
-        let mut acc = <G as PrimeCurveAffine>::Curve::identity();
+        let mut acc = G::Curve::identity();
         let mut bits = 0;
         for i in 0..num_windows {
             let w = std::cmp::min(window_size, exp_bits - bits);
@@ -311,10 +312,12 @@ where
         scope: &Scope<'s>,
         bases: &'s [G],
         exps: &'s [<G::Scalar as PrimeField>::Repr],
-        results: &'s mut [<G as PrimeCurveAffine>::Curve],
+        results: &'s mut [G::Curve],
         error: Arc<RwLock<EcResult<()>>>,
     ) where
-        G: PrimeCurveAffine<Scalar = <E as Engine>::Scalar>,
+        //G: PrimeCurveAffine<Scalar = <E as Engine>::Scalar>,
+        G: CurveAffine
+
     {
         let num_devices = self.kernels.len();
         let num_exps = exps.len();
@@ -331,7 +334,7 @@ where
         {
             let error = error.clone();
             scope.execute(move || {
-                let mut acc = <G as PrimeCurveAffine>::Curve::identity();
+                let mut acc =  G::Curve::identity();
                 for (bases, exps) in bases.chunks(kern.n).zip(exps.chunks(kern.n)) {
                     if error.read().unwrap().is_err() {
                         break;
@@ -360,9 +363,9 @@ where
         bases_arc: Arc<Vec<G>>,
         exps: Arc<Vec<<G::Scalar as PrimeField>::Repr>>,
         skip: usize,
-    ) -> EcResult<<G as PrimeCurveAffine>::Curve>
+    ) -> EcResult<G::Curve>
     where
-         G: PrimeCurveAffine<Scalar =<E as Engine>::Scalar>,
+         G: CurveAffine
     {
         // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
         // https://github.com/zkcrypto/bellman/blob/10c5010fd9c2ca69442dc9775ea271e286e776d8/src/multiexp.rs#L38
@@ -373,7 +376,7 @@ where
         let error = Arc::new(RwLock::new(Ok(())));
 
         pool.scoped(|s| {
-            results = vec![<G as PrimeCurveAffine>::Curve::identity(); self.kernels.len()];
+            results = vec![ G::Curve::identity(); self.kernels.len()];
             self.parallel_multiexp(s, bases, exps, &mut results, error.clone());
         });
 
@@ -382,9 +385,9 @@ where
             .into_inner()
             .unwrap()?;
 
-        println!("{:?}", results);
+        //println!("{:?}", results);
 
-        let mut acc = <G as PrimeCurveAffine>::Curve::identity();
+        let mut acc = G::Curve::identity();
         for r in results {
             acc.add_assign(&r);
         }
@@ -412,14 +415,14 @@ mod tests {
     use rand::{Rng, SeedableRng, rngs::StdRng};
     use crate::multiexp_cpu::{multiexp_cpu, FullDensity, QueryDensity, SourceBuilder};
     
-    fn naive_multiexp<G: PrimeCurveAffine>(
+    fn naive_multiexp<G: CurveAffine>(
         bases: Arc<Vec<G>>,
         exponents: &[G::Scalar],
     ) -> G::Curve {
         assert_eq!(bases.len(), exponents.len());
     
-        let mut acc: <G as PrimeCurveAffine>::Curve = G::Curve::identity();
-    
+        let mut acc = G::Curve::identity();
+
         for (base, exp) in bases.iter().zip(exponents.iter()) {
             acc.add_assign(&base.mul(*exp));
         }
@@ -434,11 +437,11 @@ mod tests {
         density_map: D,
         exponents: Arc<Vec<<G::Scalar as PrimeField>::Repr>>,
         kern: &mut MultiexpKernel<E>,
-    ) -> Result<<G as PrimeCurveAffine>::Curve, EcError>
+    ) -> Result<G::Curve, EcError>
     where
         for<'a> &'a Q: QueryDensity,
         D: Send + Sync + 'static + Clone + AsRef<Q>,
-        G: PrimeCurveAffine,
+        G: CurveAffine,
         E: GpuEngine,
         E: Engine<Scalar = G::Scalar>,
         S: SourceBuilder<G>,
@@ -447,6 +450,9 @@ mod tests {
         let (bss, skip) = bases.get();
         kern.multiexp(pool, bss, exps, skip).map_err(Into::into)
     }
+
+    /* 
+    //pub fn halo2_multiexp<C: halo2curves::CurveAffine<ScalarExt = halo2curves::bn256::Fr>,E, S>(exponents: &[C::Scalar], bases: &[C]) -> C::Curve
 
     pub fn halo2_multiexp<C: halo2curves::CurveAffine,E, S>(exponents: &[C::Scalar], bases: &[C]) -> C::Curve
     where 
@@ -471,6 +477,30 @@ mod tests {
         let mut acc = C::Curve::identity();
         acc
     }
+        */
+
+    pub fn halo2_multiexp<C: CurveAffine>(exponents: &[C::Scalar], bases: &[C]) -> EcResult<C::Curve>
+     {
+        let devices = Device::all();
+        let mut kern =MultiexpKernel::<Bn256>::create(&devices).expect("Cannot initialize kernel!");
+        let pool = Worker::new();
+        //let density_map = FullDensity;
+        
+        let t: Arc<Vec<_>> = Arc::new(exponents.iter().map(|a| a.to_repr()).collect());
+        //let exps = density_map.as_ref().generate_exps(t);
+        //let exps = density_map.as_ref().generate_exps::<C>(t);
+
+        //let t: Arc<Vec<_>> = Arc::new(bases.iter().map(|fr| .to_repr()).collect());
+
+        let g:Arc<Vec<_>> = Arc::new(bases.to_vec().clone());
+        let g2 = (g.clone(), 0);
+        let (bss, skip) = g2.get();
+        
+        kern.multiexp(&pool, bss, t, skip)      
+
+        //let mut acc = C::Curve::identity();
+        //acc
+    }
 
     #[test]
     fn halo2_multiexp_test() {
@@ -479,15 +509,6 @@ mod tests {
 
         let mut rng = Pcg32::seed_from_u64(42);
 
-        /* 
-        let multiexp_scalars: Vec<<Bn256 as Engine>::Scalar> = (0..max_size)
-        .map(|_| <Bn256 as Engine>::Scalar::random(&mut rng))
-        .collect();
-         let multiexp_bases = (0..(1 << max_size))
-            .map(|_| <Bn256 as Engine>::G1::random(&mut rng).to_affine())
-            .collect::<Vec<_>>();
-        */
-        
         let multiexp_scalars_2:Vec<<Bn256 as Engine>::Scalar> = (0..max_size)
             .map(|_| <Bn256 as Engine>::Scalar::random(&mut rng))
             .collect();
@@ -496,7 +517,13 @@ mod tests {
         .map(|_| <Bn256 as Engine>::G1::random(&mut rng).to_affine())
         .collect();
         
-        halo2_multiexp(&multiexp_scalars_2, &multiexp_bases_2); 
+        let gpu = halo2_multiexp(&multiexp_scalars_2, &multiexp_bases_2).unwrap(); 
+        println!("gpu:{:?}",  gpu.to_affine());
+
+
+        let g = Arc::new(multiexp_bases_2.clone());
+        let naive = naive_multiexp(g.clone(), &multiexp_scalars_2);
+        println!("naive:{:?}", naive.to_affine());
 
         //halo2_multiexp(multiexp_scalars, multiexp_bases); 
         }
@@ -528,6 +555,8 @@ mod tests {
             .map(|_| <Bn256 as Engine>::Scalar::random(&mut rng))
             .collect();
 
+            let test = v.clone();
+
             let naive = naive_multiexp(g.clone(), &v);
 
             let t:Arc<Vec<[u8; 32]>> = Arc::new(v.into_iter().map(|fr| fr.to_repr()).collect());
@@ -546,6 +575,9 @@ mod tests {
             let cpu_dur = now.elapsed().as_secs() * 1000 + now.elapsed().subsec_millis() as u64;
             println!("CPU took {}ms.", cpu_dur);
 
+
+            let halo2 = halo2_multiexp( &test, &bases).unwrap(); 
+
             println!("Speedup: x{}", cpu_dur as f32 / gpu_dur as f32);
 
             let naive_affrine = naive.to_affine();
@@ -555,6 +587,7 @@ mod tests {
             println!("naive:{:?}", naive.to_affine());
             println!("cpu:{:?}",  cpu.to_affine());
             println!("gpu:{:?}",  gpu.to_affine());
+            println!("halo2:{:?}",  halo2.to_affine());
 
             //assert_eq!(naive_affrine, gpu_affrine);
             //assert_eq!(naive_affrine, cpu_affrine);
