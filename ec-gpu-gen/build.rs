@@ -11,10 +11,9 @@ fn main() {
     use std::path::PathBuf;
     use std::process::Command;
     use std::{env, fs};
-
-    use blstrs::Bls12;
     use sha2::{Digest, Sha256};
-
+    use halo2curves::bn256::Bn256;
+    
     #[path = "src/source.rs"]
     mod source;
 
@@ -25,7 +24,7 @@ fn main() {
         return;
     }
 
-    let kernel_source = source::gen_source::<Bls12, source::Limb32>();
+    let kernel_source = source::gen_source::<Bn256, source::Limb32>();
 
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR was not set.");
 

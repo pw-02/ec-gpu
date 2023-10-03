@@ -8,7 +8,6 @@ use log::{error, info};
 //use pairing::Engine;
 use halo2curves::pairing::Engine;
 use halo2curves::ff::Field;
-
 use rust_gpu_tools::{program_closures, Device, LocalBuffer, Program, Vendor};
 
 use crate::threadpool::THREAD_POOL;

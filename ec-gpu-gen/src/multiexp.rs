@@ -451,33 +451,7 @@ mod tests {
         kern.multiexp(pool, bss, exps, skip).map_err(Into::into)
     }
 
-    /* 
-    //pub fn halo2_multiexp<C: halo2curves::CurveAffine<ScalarExt = halo2curves::bn256::Fr>,E, S>(exponents: &[C::Scalar], bases: &[C]) -> C::Curve
 
-    pub fn halo2_multiexp<C: halo2curves::CurveAffine,E, S>(exponents: &[C::Scalar], bases: &[C]) -> C::Curve
-    where 
-        E: GpuEngine,
-        E: Engine<Scalar = C::Scalar>,
-        S: SourceBuilder<C>
-     {
-        let devices = Device::all();
-        let mut kern =MultiexpKernel::<Bn256>::create(&devices).expect("Cannot initialize kernel!");
-        let pool = Worker::new();
-        let density_map = FullDensity;
-        
-        let t: Arc<Vec<_>> = Arc::new(exponents.iter().map(|a| a.to_repr()).collect());
-        let exps = density_map.as_ref().generate_exps::<E>(t);
-        
-        let g:Arc<Vec<_>> = Arc::new(bases.to_vec().clone());
-        let g2 = (g.clone(), 0);
-        let (bss, skip) = g2.get();
-        
-        kern.multiexp(&pool, bss, exps, skip).map_err(Into::into);        
-
-        let mut acc = C::Curve::identity();
-        acc
-    }
-        */
 
     pub fn halo2_multiexp<C: CurveAffine>(exponents: &[C::Scalar], bases: &[C]) -> EcResult<C::Curve>
      {
