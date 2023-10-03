@@ -362,7 +362,7 @@ where
         skip: usize,
     ) -> EcResult<<G as PrimeCurveAffine>::Curve>
     where
-        G: PrimeCurveAffine<Scalar =<E as Engine>::Scalar>,
+         G: PrimeCurveAffine<Scalar =<E as Engine>::Scalar>,
     {
         // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
         // https://github.com/zkcrypto/bellman/blob/10c5010fd9c2ca69442dc9775ea271e286e776d8/src/multiexp.rs#L38
@@ -402,6 +402,8 @@ where
 mod tests {
     use super::*;
 
+    use halo2curves::{bn256::G1Affine};
+    use halo2curves::ff::PrimeField;
     use std::time::Instant;
     use halo2curves::bn256::Bn256;
     use halo2curves::ff::Field;
@@ -446,6 +448,61 @@ mod tests {
         kern.multiexp(pool, bss, exps, skip).map_err(Into::into)
     }
 
+    pub fn halo2_multiexp<C: halo2curves::CurveAffine,E, S>(exponents: &[C::Scalar], bases: &[C]) -> C::Curve
+    where 
+        E: GpuEngine,
+        E: Engine<Scalar = C::Scalar>,
+        S: SourceBuilder<C>
+     {
+        let devices = Device::all();
+        let mut kern =MultiexpKernel::<Bn256>::create(&devices).expect("Cannot initialize kernel!");
+        let pool = Worker::new();
+        let density_map = FullDensity;
+        
+        let t: Arc<Vec<_>> = Arc::new(exponents.iter().map(|a| a.to_repr()).collect());
+        let exps = density_map.as_ref().generate_exps::<E>(t);
+        
+        let g:Arc<Vec<_>> = Arc::new(bases.to_vec().clone());
+        let g2 = (g.clone(), 0);
+        let (bss, skip) = g2.get();
+        
+        kern.multiexp(&pool, bss, exps, skip).map_err(Into::into);        
+
+        let mut acc = C::Curve::identity();
+        acc
+    }
+
+    #[test]
+    fn halo2_multiexp_test() {
+        let k = 2;
+        let max_size = 1 << (k + 1);
+
+        let mut rng = Pcg32::seed_from_u64(42);
+
+        /* 
+        let multiexp_scalars: Vec<<Bn256 as Engine>::Scalar> = (0..max_size)
+        .map(|_| <Bn256 as Engine>::Scalar::random(&mut rng))
+        .collect();
+         let multiexp_bases = (0..(1 << max_size))
+            .map(|_| <Bn256 as Engine>::G1::random(&mut rng).to_affine())
+            .collect::<Vec<_>>();
+        */
+        
+        let multiexp_scalars_2:Vec<<Bn256 as Engine>::Scalar> = (0..max_size)
+            .map(|_| <Bn256 as Engine>::Scalar::random(&mut rng))
+            .collect();
+          
+        let multiexp_bases_2: Vec<<Bn256 as Engine>::G1Affine> = (0..max_size)
+        .map(|_| <Bn256 as Engine>::G1::random(&mut rng).to_affine())
+        .collect();
+        
+        halo2_multiexp(&multiexp_scalars_2, &multiexp_bases_2); 
+
+        //halo2_multiexp(multiexp_scalars, multiexp_bases); 
+        }
+    
+
+
     #[test]
     fn gpu_multiexp_consistency() {
         const MAX_LOG_D: usize = 2;
@@ -462,7 +519,7 @@ mod tests {
             .collect::<Vec<_>>();
 
         for log_d in START_LOG_D..=MAX_LOG_D {
-                let g = Arc::new(bases.clone());
+            let g = Arc::new(bases.clone());
 
             let samples = 1 << log_d;
             println!("Testing Multiexp for {} elements...", samples);
@@ -508,4 +565,5 @@ mod tests {
             bases = [bases.clone(), bases.clone()].concat();
         }
     }
+
 }
