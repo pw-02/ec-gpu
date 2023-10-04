@@ -15,8 +15,6 @@ use crate::{
     program, Limb32, Limb64,
 };
 
-use halo2curves::fft::FftGroup;
-
 const LOG2_MAX_ELEMENTS: usize = 32; // At most 2^32 elements is supported.
 const MAX_LOG2_RADIX: u32 = 8; // Radix256
 const MAX_LOG2_LOCAL_WORK_SIZE: u32 = 7; // 128
@@ -59,21 +57,21 @@ impl<'a, E: Engine + GpuEngine> SingleFftKernel<'a, E> {
     /// Performs FFT on `input`
     /// * `omega` - Special value `omega` is used for FFT over finite-fields
     /// * `log_n` - Specifies log2 of number of elements
-    pub fn radix_fft<Scalar: Field, G: FftGroup<Scalar>>(&mut self, input: &mut [G], omega: &Scalar, log_n: u32) -> EcResult<()> {
-        let closures = program_closures!(|program, input: &mut [G]| -> EcResult<()> {
+    pub fn radix_fft(&mut self, input: &mut [<E as Engine>::Scalar], omega: &<E as Engine>::Scalar, log_n: u32) -> EcResult<()> {
+        let closures = program_closures!(|program, input: &mut [<E as Engine>::Scalar]| -> EcResult<()> {
             let n = 1 << log_n;
             // All usages are safe as the buffers are initialized from either the host or the GPU
             // before they are read.
-            let mut src_buffer = unsafe { program.create_buffer::<G>(n)? };
-            let mut dst_buffer = unsafe { program.create_buffer::<G>(n)? };
+            let mut src_buffer = unsafe { program.create_buffer::<<E as Engine>::Scalar>(n)? };
+            let mut dst_buffer = unsafe { program.create_buffer::<<E as Engine>::Scalar>(n)? };
             // The precalculated values pq` and `omegas` are valid for radix degrees up to `max_deg`
             let max_deg = cmp::min(MAX_LOG2_RADIX, log_n);
 
             // Precalculate:
             // [omega^(0/(2^(deg-1))), omega^(1/(2^(deg-1))), ..., omega^((2^(deg-1)-1)/(2^(deg-1)))]
-            let mut pq = vec![Scalar::ZERO; 1 << max_deg >> 1];
+            let mut pq = vec![<E as Engine>::Scalar::ZERO; 1 << max_deg >> 1];
             let twiddle = omega.pow_vartime([(n >> max_deg) as u64]);
-            pq[0] = Scalar::ONE;
+            pq[0] = <E as Engine>::Scalar::ONE;
             if max_deg > 1 {
                 pq[1] = twiddle;
                 for i in 2..(1 << max_deg >> 1) {
@@ -84,7 +82,7 @@ impl<'a, E: Engine + GpuEngine> SingleFftKernel<'a, E> {
             let pq_buffer = program.create_buffer_from_slice(&pq)?;
 
             // Precalculate [omega, omega^2, omega^4, omega^8, ..., omega^(2^31)]
-            let mut omegas = vec![Scalar::ZERO; 32];
+            let mut omegas = vec![<E as Engine>::Scalar::ZERO; 32];
             omegas[0] = *omega;
             for i in 1..LOG2_MAX_ELEMENTS {
                 omegas[i] = omegas[i - 1].pow_vartime([2u64]);
@@ -210,10 +208,10 @@ where
     /// * `log_n` - Specifies log2 of number of elements
     ///
     /// Uses all available GPUs to distribute the work.
-    pub fn radix_fft_many<Scalar: Field, G: FftGroup<Scalar>>(
+    pub fn radix_fft_many(
         &mut self,
-        inputs: &mut [&mut [G]],
-        omegas: &[Scalar],
+        inputs: &mut [&mut [<E as Engine>::Scalar]],
+        omegas: &[<E as Engine>::Scalar],
         log_ns: &[u32],
     ) -> EcResult<()> {
         let n = inputs.len();
@@ -250,6 +248,7 @@ where
         Arc::try_unwrap(result).unwrap().into_inner().unwrap()
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -260,9 +259,8 @@ mod tests {
 
     use  halo2curves::ff::{Field, PrimeField};
     use std::time::Instant;
-    use rand_pcg::Pcg32;
-    use rand::{Rng, SeedableRng, rngs::StdRng};
-    use halo2curves::fft::FftGroup;
+
+
     use crate::fft_cpu::{parallel_fft, serial_fft};
     use crate::threadpool::Worker;
 
@@ -275,33 +273,6 @@ mod tests {
         }
         omega
     }
-
-    pub fn halo2_fft<Scalar: Field, G: FftGroup<Scalar>>(a: &mut [G], omega: Scalar, log_n: u32) {
-
-        let devices = Device::all();
-        let mut kern = FftKernel::<Bn256>::create(&devices).expect("Cannot initialize kernel!");
-
-        kern.radix_fft_many(&mut [a], &[omega], &[log_n])
-                .expect("GPU FFT failed!");
-
-   }
-
-    #[test]
-    fn halo2_fft_test() {
-        let mut rng = Pcg32::seed_from_u64(42);
-        let log_n = 4;
-        let d = 1 << log_n;
-        
-        let coeffs: Vec<_> = (0..d).map(|_| Fr::random(&mut rng)).collect();
-        let mut gpu_fft_coeffs = coeffs.clone();
-        let omega = Fr::random(&mut rng); // would be weird if this mattered
-        halo2_fft(&mut gpu_fft_coeffs, omega, log_n as u32);
-        
-        //halo2_multiexp(multiexp_scalars, multiexp_bases);
-        //kern.radix_fft_many(&mut [&mut v1_coeffs], &[v1_omega], &[log_d])
-        //        .expect("GPU FFT failed!");
-    }
-    
 
     #[test]
     pub fn gpu_fft_consistency() {
