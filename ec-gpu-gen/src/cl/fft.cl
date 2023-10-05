@@ -14,7 +14,7 @@ KERNEL void radix_fft(GLOBAL FIELD* x, // Source buffer
                       GLOBAL FIELD* y, // Destination buffer
                       GLOBAL FIELD* pq, // Precalculated twiddle factors
                       GLOBAL FIELD* omegas, // [omega, omega^2, omega^4, ...]
-                      LOCAL FIELD* u_arg, // Local buffer to store intermediary values
+                      //LOCAL FIELD* u_arg, // Local buffer to store intermediary values
                       uint n, // Number of elements
                       uint lgp, // Log2 of `p` (Read more in the link above)
                       uint deg, // 1=>radix2, 2=>radix4, 3=>radix8, ...
