@@ -3,7 +3,7 @@
   #define DEVICE __device__
   #define GLOBAL
   #define KERNEL extern "C" __global__
-  #define LOCAL __shared__
+ // #define LOCAL __shared__
   #define CONSTANT __constant__
 
   #define GET_GLOBAL_ID() blockIdx.x * blockDim.x + threadIdx.x
