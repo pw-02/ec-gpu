@@ -47,7 +47,7 @@ fn main() {
             */
             command
                 .arg("--optimize=6")
-                .arg("--threads=0")
+                //.arg("--threads=0")
                 .arg("--fatbin")
                 .arg("--gpu-architecture=sm_61")
                 .arg("--generate-code=arch=compute_61,code=sm_61")
