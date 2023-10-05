@@ -34,20 +34,17 @@ fn main() {
         Ok(args) => execute::command(format!("nvcc {}", args)),
         Err(_) => {
             let mut command = Command::new("nvcc");
-           
+           /*
             command
                 .arg("--optimize=6")
                 // Compile with as many threads as CPUs are available.
-                //.arg("--threads=0")
+                .arg("--threads=0")
                 .arg("--fatbin")
                 .arg("--gpu-architecture=sm_86")
                 .arg("--generate-code=arch=compute_86,code=sm_86")
                 .arg("--generate-code=arch=compute_80,code=sm_80")
-                .arg("--generate-code=arch=compute_75,code=sm_75")
-                .arg("--generate-code=arch=compute_61,code=sm_61")
-                .arg("--generate-code=arch=compute_60,code=sm_60")
-                .arg("--generate-code=arch=compute_52,code=sm_52");
-            /* 
+                .arg("--generate-code=arch=compute_75,code=sm_75");
+            */ 
             command
                 .arg("--optimize=6")
                 //.arg("--threads=0")
@@ -56,7 +53,6 @@ fn main() {
                 .arg("--generate-code=arch=compute_61,code=sm_61")
                 .arg("--generate-code=arch=compute_60,code=sm_60")
                 .arg("--generate-code=arch=compute_52,code=sm_52");
-            */ 
             command
         }
     };
