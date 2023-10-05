@@ -371,7 +371,7 @@ mod tests {
     fn source_cuda() -> String {
         let src = vec![
             common(),
-            field::<Scalar, Limb32>("Scalar32"),
+            field::<halo2curves::bn256::Fr, Limb32>("Scalar32"),
             TEST_SRC.to_string(),
         ]
         .join("\n\n");

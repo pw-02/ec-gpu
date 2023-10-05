@@ -11,9 +11,9 @@ fn main() {
     use std::path::PathBuf;
     use std::process::Command;
     use std::{env, fs};
-    use sha2::{Digest, Sha256};
     use halo2curves::bn256::Bn256;
-    
+    use sha2::{Digest, Sha256};
+
     #[path = "src/source.rs"]
     mod source;
 
