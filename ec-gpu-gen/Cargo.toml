@@ -25,8 +25,10 @@ rust-gpu-tools = { version = "0.6.0", default-features = false, optional = true 
 temp-env = "0.2.0"
 thiserror = "1.0.30"
 yastl = "0.1.2"
-halo2curves = {path = "../../halo2curves"}
+# halo2curves = {path = "../../halo2curves"}
 rand_pcg = "0.3.1"
+halo2curves = {path = "../../halo2curves"}
+# halo2curves = { git = "https://github.com/privacy-scaling-explorations/halo2curves", rev="9fff22c", default-features = false }
 
 
 [dev-dependencies]
@@ -37,11 +39,13 @@ lazy_static = "1.2"
 tempfile = "3.2.0"
 rand_core = "0.6.3"
 rand_xorshift = "0.3.0"
+ec-gpu = {path = "../ec-gpu"}
 
 [build-dependencies]
 #blstrs = "0.5.0"
 #ec-gpu = "0.1.0"
 ec-gpu = {path = "../ec-gpu"}
+# halo2curves = {path = "../../halo2curves"}
 halo2curves = {path = "../../halo2curves"}
 
 execute = "0.2.9"
