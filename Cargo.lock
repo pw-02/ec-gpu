@@ -34,26 +34,14 @@ checksum = "b4682ae6287fcf752ecaabbfcc7b6f9b72aa33933dc23a554d853aea8eea8635"
 
 [[package]]
 name = "bitvec"
-version = "0.22.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5237f00a8c86130a0cc317830e558b966dd7850d48a953d998c813f01a41b527"
-dependencies = [
- "funty 1.2.0",
- "radium 0.6.2",
- "tap",
- "wyz 0.4.0",
-]
-
-[[package]]
-name = "bitvec"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1bc2832c24239b0141d5674bb9174f9d68a8b5b3f2753311927c172ca46f7e9c"
 dependencies = [
- "funty 2.0.0",
- "radium 0.7.0",
+ "funty",
+ "radium",
  "tap",
- "wyz 0.5.1",
+ "wyz",
 ]
 
 [[package]]
@@ -100,7 +88,7 @@ dependencies = [
  "ec-gpu 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ff 0.12.1",
  "group 0.12.1",
- "pairing",
+ "pairing 0.22.0",
  "rand_core",
  "serde",
  "subtle",
@@ -276,7 +264,7 @@ checksum = "78f1e64cf7ee95dacc8c739e0bf0b06583edaa8e0cee45b27ee2c08ae9343a2e"
 name = "ec-gpu-gen"
 version = "0.3.0"
 dependencies = [
- "bitvec 0.22.3",
+ "bitvec",
  "blstrs",
  "crossbeam-channel",
  "ec-gpu 0.1.0",
@@ -289,7 +277,7 @@ dependencies = [
  "log",
  "num_cpus",
  "once_cell",
- "pairing",
+ "pairing 0.22.0",
  "rand",
  "rand_core",
  "rand_pcg",
@@ -379,7 +367,7 @@ version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d013fc25338cc558c5c2cfbad646908fb23591e2404481826742b651c9af7160"
 dependencies = [
- "bitvec 1.0.1",
+ "bitvec",
  "rand_core",
  "subtle",
 ]
@@ -390,7 +378,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
 dependencies = [
- "bitvec 1.0.1",
+ "bitvec",
  "rand_core",
  "subtle",
 ]
@@ -415,11 +403,6 @@ checksum = "1657b4441c3403d9f7b3409e47575237dac27b1b5726df654a6ecbf92f0f7577"
 dependencies = [
  "spin 0.9.8",
 ]
-
-[[package]]
-name = "funty"
-version = "1.2.0"
-source = "git+https://github.com/bitvecto-rs/funty/?rev=7ef0d890fbcd8b3def1635ac1a877fc298488446#7ef0d890fbcd8b3def1635ac1a877fc298488446"
 
 [[package]]
 name = "funty"
@@ -489,6 +472,7 @@ dependencies = [
  "lazy_static",
  "num-bigint",
  "num-traits",
+ "pairing 0.23.0",
  "pasta_curves",
  "paste",
  "rand",
@@ -623,6 +607,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "pairing"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81fec4625e73cf41ef4bb6846cafa6d44736525f442ba45e407c4a000a13996f"
+dependencies = [
+ "group 0.13.0",
+]
+
+[[package]]
 name = "pasta_curves"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -666,12 +659,6 @@ checksum = "5267fca4496028628a95160fc423a33e8b2e6af8a5302579e322e4b520293cae"
 dependencies = [
  "proc-macro2",
 ]
-
-[[package]]
-name = "radium"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "643f8f41a8ebc4c5dc4515c82bb8abd397b527fc20fd681b7c011c2aee5d44fb"
 
 [[package]]
 name = "radium"
@@ -1102,15 +1089,6 @@ checksum = "ed94fce61571a4006852b7389a063ab983c02eb1bb37b47f8272ce92d06d9538"
 
 [[package]]
 name = "wyz"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "129e027ad65ce1453680623c3fb5163cbf7107bfe1aa32257e7d0e63f9ced188"
-dependencies = [
- "tap",
-]
-
-[[package]]
-name = "wyz"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f360fc0b24296329c78fda852a1e9ae82de9cf7b27dae4b7f62f118f77b9ed"
@@ -1147,3 +1125,8 @@ dependencies = [
  "quote",
  "syn 2.0.37",
 ]
+
+[[patch.unused]]
+name = "funty"
+version = "1.2.0"
+source = "git+https://github.com/bitvecto-rs/funty/?rev=7ef0d890fbcd8b3def1635ac1a877fc298488446#7ef0d890fbcd8b3def1635ac1a877fc298488446"

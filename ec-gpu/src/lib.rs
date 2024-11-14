@@ -5,7 +5,7 @@
 /// - `G1`
 /// - `G2`
 pub trait GpuEngine {
-    type Scalar: GpuField;
+    type Fr: GpuField;
     type Fp: GpuField;
 }
 

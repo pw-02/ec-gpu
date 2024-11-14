@@ -27,7 +27,7 @@ pub fn gen_source<E: GpuEngine, L: Limb>() -> String {
 /// The code from the [`common()`] call needs to be included before this on is used.
 pub fn gen_ec_source<E: GpuEngine, L: Limb>() -> String {
     vec![
-        field::<E::Scalar, L>("Fr"),
+        field::<E::Fr, L>("Fr"),
         field::<E::Fp, L>("Fq"),
         field2("Fq2", "Fq"),
         ec("Fq", "G1"),
@@ -339,7 +339,7 @@ mod tests {
     pub struct GpuScalar(pub Scalar);
     impl Default for GpuScalar {
         fn default() -> Self {
-            Self(Scalar::zero())
+            Self(Fr::zero())
         }
     }
 

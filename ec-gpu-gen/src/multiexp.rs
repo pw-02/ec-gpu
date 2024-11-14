@@ -51,7 +51,7 @@ where
     /// [`EcError::Aborted`].
     maybe_abort: Option<&'a (dyn Fn() -> bool + Send + Sync)>,
 
-    _phantom: std::marker::PhantomData<<E as Engine>::Scalar>,
+    _phantom: std::marker::PhantomData<<E as Engine>::Fr>,
 }
 
 fn calc_num_groups(core_count: usize, num_windows: usize) -> usize {
@@ -103,7 +103,7 @@ where
 
 
 fn exp_size<E: Engine>() -> usize {
-    std::mem::size_of::<<E::Scalar as PrimeField>::Repr>()
+    std::mem::size_of::<<E::Fr as PrimeField>::Repr>()
 }
 
 

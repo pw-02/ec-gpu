@@ -91,8 +91,8 @@ pub trait QueryDensity: Sized {
     fn get_query_size(self) -> Option<usize>;
     fn generate_exps<E: Engine>(
         self,
-        exponents: Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>>,
-    ) -> Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>>;
+        exponents: Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>,
+    ) -> Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>;
 }
 
 #[derive(Clone)]
@@ -117,8 +117,8 @@ impl<'a> QueryDensity for &'a FullDensity {
 
     fn generate_exps<E: Engine>(
         self,
-        exponents: Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>>,
-    ) -> Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>> {
+        exponents: Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>,
+    ) -> Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>> {
         exponents
     }
 }
@@ -130,10 +130,10 @@ pub struct DensityTracker {
 }
 
 impl<'a> QueryDensity for &'a DensityTracker {
-    type Iter = bitvec::slice::BitValIter<'a, Lsb0, usize>;
+    type Iter = bitvec::slice::BitValIter<'a, usize, Lsb0>;
 
     fn iter(self) -> Self::Iter {
-        self.bv.iter().by_val()
+        self.bv.iter().by_vals()
     }
 
     fn get_query_size(self) -> Option<usize> {
@@ -142,8 +142,8 @@ impl<'a> QueryDensity for &'a DensityTracker {
 
     fn generate_exps<E: Engine>(
         self,
-        exponents: Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>>,
-    ) -> Arc<Vec<<<E as Engine>::Scalar as PrimeField>::Repr>> {
+        exponents: Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>,
+    ) -> Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>> {
         let exps: Vec<_> = exponents
             .iter()
             .zip(self.bv.iter())
@@ -352,7 +352,7 @@ where
     for<'a> &'a Q: QueryDensity,
     D: Send + Sync + 'static + Clone + AsRef<Q>,
     G: PrimeCurveAffine,
-    E: Engine<Scalar = G::Scalar>,
+    E: Engine<Fr = G::Scalar>,
     S: SourceBuilder<G>,
 {
     let c = if exponents.len() < 32 {
@@ -385,7 +385,7 @@ mod tests {
     fn test_with_bn256() {
         fn naive_multiexp<G: PrimeCurveAffine>(
             bases: Arc<Vec<G>>,
-            exponents: &[G::Scalar],
+            exponents: &[G::Fr],
         ) -> G::Curve {
             assert_eq!(bases.len(), exponents.len());
 
@@ -401,8 +401,8 @@ mod tests {
         const SAMPLES: usize = 1 << 14;
 
         let rng: &mut rand::rngs::ThreadRng = &mut rand::thread_rng();
-        let v: Vec<<Bn256 as Engine>::Scalar> = (0..SAMPLES)
-            .map(|_| <Bn256 as Engine>::Scalar::random(&mut *rng))
+        let v: Vec<<Bn256 as Engine>::Fr> = (0..SAMPLES)
+            .map(|_| <Bn256 as Engine>::Fr::random(&mut *rng))
             .collect();
         let g = Arc::new(
             (0..SAMPLES)
